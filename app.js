@@ -12,6 +12,7 @@ L.control.zoom({position:"bottomright"}).addTo(map);
 [["pFill",200],["pTerrain",250],["pBounds",300],["pRivers",350],["pFlows",420],["pPts",450],["pLbl",520]].forEach(([n,z])=>{map.createPane(n).style.zIndex=z;});
 map.getPane("pTerrain").style.pointerEvents="none";map.getPane("pLbl").style.pointerEvents="none";
 const cv=L.canvas({pane:"pPts",padding:.3});
+const sv=L.svg({pane:"pFlows",padding:.5});
 
 const ll=r=>r.map(([x,y])=>[y,x]);
 const PROV_FILL={"山西":"#e8d6b2","河北":"#efe4cc","河南":"#ece0c6","山东":"#ece0c6","北京":"#ebdfc4","天津":"#ebdfc4"};
@@ -79,7 +80,7 @@ function setFlows(keys){flows.clearLayers();parts=[];
   for(const k of keys)for(const[s,d]of ROUTES[k]){const a=P(s),b=P(d),c=ctrl(a,b),pts=[];for(let i=0;i<=30;i++)pts.push(bez(a,c,b,i/30));
     L.polyline(pts,{pane:"pFlows",color:"#a8322a",weight:1.4,opacity:.4,interactive:false}).addTo(flows);
     for(let j=0;j<5;j++)parts.push({m:L.circleMarker(a,{renderer:cv,radius:2.4,stroke:false,fillColor:"#a8322a",fillOpacity:.9,interactive:false}).addTo(flows),a,c,b,t:Math.random(),v:.003+Math.random()*.004});}}
-(function tick(){for(const p of parts){p.t+=p.v;if(p.t>1)p.t=0;p.m.setLatLng(bez(p.a,p.c,p.b,p.t));p.m.setStyle({fillOpacity:Math.sin(p.t*Math.PI)});}requestAnimationFrame(tick);})();
+(function tick(){if(!map._animatingZoom)for(const p of parts){p.t+=p.v;if(p.t>1)p.t=0;p.m.setLatLng(bez(p.a,p.c,p.b,p.t));p.m.setStyle({fillOpacity:Math.sin(p.t*Math.PI)});}requestAnimationFrame(tick);})();
 
 // ---------- zhaoxian villages ----------
 const zxLayer=L.layerGroup();
@@ -118,7 +119,7 @@ const refs=L.layerGroup().addTo(map);
 function route(a,b,dashed){const c=ctrl(a,b),pts=[];for(let i=0;i<=30;i++)pts.push(bez(a,c,b,i/30));
   L.polyline(pts,{pane:"pFlows",color:"#a8322a",weight:dashed?1.8:1.6,opacity:dashed?.75:.5,dashArray:dashed?"5 6":null,interactive:false}).addTo(flows);
   if(!dashed)for(let j=0;j<8;j++)parts.push({m:L.circleMarker(a,{renderer:cv,radius:2.6,stroke:false,fillColor:"#a8322a",fillOpacity:.9,interactive:false}).addTo(flows),a,c,b,t:Math.random(),v:.003+Math.random()*.004});}
-function refMark(lat,lon,label,html,color){L.circleMarker([lat,lon],{renderer:cv,radius:6,color:"#fbf6ea",weight:1.5,fillColor:color||"#a8322a",fillOpacity:1}).bindPopup(html).addTo(refs);
+function refMark(lat,lon,label,html,color){L.circleMarker([lat,lon],{renderer:sv,radius:6,color:"#fbf6ea",weight:1.5,fillColor:color||"#a8322a",fillOpacity:1}).bindPopup(html).addTo(refs);
   L.marker([lat,lon],{pane:"pLbl",icon:L.divIcon({className:"city key",html:esc(label),iconSize:null,iconAnchor:[-7,6]}),interactive:false}).addTo(refs);}
 
 // ---------- search ----------
@@ -141,8 +142,8 @@ const SX_SRC={"洪洞":[36.270,111.672],"太原":[37.87,112.55],"阳曲":[38.06,
 const RC={local:"#2e6b3a",hongdong:"#a8322a",shanxi:"#b8892f",branch:"#0f766e",junhu:"#6b4f8a"};
 let ROUTESET=[],HERE=null;
 function lineCurve(a,b,color,dashed,particles){const c=ctrl(a,b),pts=[];for(let i=0;i<=30;i++)pts.push(bez(a,c,b,i/30));
-  L.polyline(pts,{pane:"pFlows",color,weight:2,opacity:dashed?.8:.55,dashArray:dashed?"5 6":null,interactive:false}).addTo(flows);
-  if(particles)for(let j=0;j<particles;j++)parts.push({m:L.circleMarker(a,{renderer:cv,radius:2.6,stroke:false,fillColor:color,fillOpacity:.9,interactive:false}).addTo(flows),a,c,b,t:Math.random(),v:.003+Math.random()*.004});}
+  L.polyline(pts,{renderer:sv,color,weight:2,opacity:dashed?.8:.55,dashArray:dashed?"5 6":null,interactive:false}).addTo(flows);
+  if(particles)for(let j=0;j<particles;j++)parts.push({m:L.circleMarker(a,{renderer:sv,radius:2.6,stroke:false,fillColor:color,fillOpacity:.9,interactive:false}).addTo(flows),a,c,b,t:Math.random(),v:.003+Math.random()*.004});}
 function drawRoutes(only){refs.clearLayers();flows.clearLayers();parts=[];map.closePopup();const pts=[HERE];
   ROUTESET.forEach((r,i)=>{if(only!=null&&only!==i)return;r.draw(pts);});
   document.querySelectorAll(".route").forEach((e,i)=>e.classList.toggle("dim",only!=null&&only!==i));
