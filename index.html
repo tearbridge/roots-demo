@@ -46,7 +46,6 @@
   <label><input type="checkbox" data-l="ming" > 明代府州治所</label>
   <label><input type="checkbox" data-l="flows" checked> 迁民路线</label>
   <label><input type="checkbox" data-l="zx" checked> 赵县逐村来历</label>
-  <label><input type="checkbox" data-l="clue"> 村名线索（营·屯·铺…）</label>
   <label><input type="checkbox" data-l="surname"> 姓氏村名</label>
   <div class="legend">
     <div><i style="background:#2e6b3a"></i>明代以前已有</div>
@@ -80,20 +79,19 @@
       <li>地图库：Leaflet</li>
     </ul>
     <h3>说明</h3>
-    <p>「村名线索」和「姓氏村名」是按名字自动筛的，只能当线索：叫某营的村不一定都是明代军营，以郝开头的村也不一定是郝姓建的。</p>
+    <p>「姓氏村名」是按名字自动筛的，只能当线索：以郝开头的村不一定是郝姓建的。</p>
   </div>
 </div>
 
 <!-- 底部面板 -->
 <div id="sheet">
   <div id="grab"></div>
-  <div class="tabs"><a data-tab="result" class="on">查询结果</a><a data-tab="time">时间线</a><a data-tab="clue">村名线索</a></div>
+  <div class="tabs"><a data-tab="result" class="on">查询结果</a><a data-tab="time">时间线</a></div>
   <div id="tab-result" class="tab"></div>
   <div id="tab-time" class="tab hidden">
     <div id="phases"></div>
     <div id="phaseBody"></div>
   </div>
-  <div id="tab-clue" class="tab hidden"></div>
 </div>
 
 <script src="vendor/leaflet.js"></script>

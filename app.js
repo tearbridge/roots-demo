@@ -88,15 +88,9 @@ const PILOT={},pilotMk=[];
 function pilotHtml(v){return `<b>${v.osm_name}</b> <span style="color:${COLORS[v.category]}">● ${CATNAME[v.category]}</span><br>`+(v.era?`年代：${v.era}<br>`:"")+(v.surname?`姓氏：${v.surname}`+(v.origin?`，来自${v.origin}`:"")+"<br>":"")+(v.note?`${v.note}<br>`:"")+`依据：${v.evidence} ${CONF[v.confidence]}`;}
 for(const v of VIL.pilot){PILOT[v.osm_name]=v;const m=L.circleMarker([v.lat,v.lon],{renderer:cv,radius:5.5,color:"#fbf6ea",weight:1.2,fillColor:COLORS[v.category],fillOpacity:1}).bindPopup(pilotHtml(v)).addTo(zxLayer);m.cat=v.category;pilotMk.push(m);}
 
-// ---------- clue & surname layers ----------
-const CLUE={营:["#8e2a5c","多与明代军队驻扎、屯田或移民编营有关"],屯:["#b8892f","多与明代军屯、民屯有关"],卫:["#6b4f8a","明代卫所驻地"],所:["#6b4f8a","明代千户所、百户所驻地"],铺:["#4f6d8a","多为明清急递铺（驿传）旧址"],堡:["#7a6a55","防御性聚落，明清都有"],寨:["#7a6a55","防御性聚落，年代不一"]};
-const CLUE_RE=/(营|屯|卫|所|铺|堡|寨)(村)?$/;
-const clue=L.layerGroup(), surname=L.layerGroup();
-function loadPlaces(){if(PLACES)return Promise.resolve(PLACES);return fetch("data/places.json").then(r=>r.json()).then(d=>{PLACES=d;$("#stPlaces").textContent=(d.length/10000).toFixed(1)+"万";buildClue();return d;});}
-let clueCount={};
-function buildClue(){clue.clearLayers();clueCount={};for(const[n,la,lo,t]of PLACES){if(t)continue;const m=n.match(CLUE_RE);if(!m)continue;const k=m[1];clueCount[k]=(clueCount[k]||0)+1;
-  L.circleMarker([la,lo],{renderer:cv,radius:2.2,stroke:false,fillColor:CLUE[k][0],fillOpacity:.75}).bindPopup(`<b>${esc(n)}</b><br>村名带「${k}」：${CLUE[k][1]}。<br><span class='sub'>按名字自动筛选，只是线索</span>`).addTo(clue);}
-  renderClueTab();}
+// ---------- surname layer ----------
+const surname=L.layerGroup();
+function loadPlaces(){if(PLACES)return Promise.resolve(PLACES);return fetch("data/places.json").then(r=>r.json()).then(d=>{PLACES=d;$("#stPlaces").textContent=(d.length/10000).toFixed(1)+"万";return d;});}
 const SN_RE=s=>new RegExp(`^[东西南北前后大小上下中新老]?${s}`);
 function surnamePlaces(s){const re=SN_RE(s);return PLACES.filter(p=>!p[3]&&re.test(p[0]));}
 function showSurname(s){surname.clearLayers();if(!s||!PLACES)return[];const list=surnamePlaces(s);
@@ -107,18 +101,18 @@ function countyOf(lat,lon){for(const c of COUNTIES){const[a,b,cc,d]=c.bb;if(lon<
 const km=(a,b)=>{const R=6371,dl=(b[0]-a[0])*Math.PI/180,dn=(b[1]-a[1])*Math.PI/180;const x=Math.sin(dl/2)**2+Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(x));};
 
 // ---------- layers panel ----------
-const LAY={terrain,rivers,bounds,ming,flows,zx:zxLayer,clue,surname};
+const LAY={terrain,rivers,bounds,ming,flows,zx:zxLayer,surname};
 const want=k=>$(`#layersPanel input[data-l="${k}"]`).checked;
 function setLayer(k,on){$(`#layersPanel input[data-l="${k}"]`).checked=on;applyLayers();}
 function applyLayers(){for(const k in LAY){if(k==="zx")continue;want(k)?LAY[k].addTo(map):map.removeLayer(LAY[k]);}zoomSync();}
-document.querySelectorAll("#layersPanel input").forEach(cb=>cb.onchange=()=>{if(cb.dataset.l==="clue"&&cb.checked)loadPlaces().then(applyLayers);else applyLayers();});
+document.querySelectorAll("#layersPanel input").forEach(cb=>cb.onchange=applyLayers);
 $("#btnLayers").onclick=()=>{$("#about").classList.add("hidden");$("#layersPanel").classList.toggle("hidden");};
 $("#btnAbout").onclick=()=>{$("#layersPanel").classList.add("hidden");$("#about").classList.toggle("hidden");};
 document.querySelectorAll("[data-close]").forEach(a=>a.onclick=()=>$("#"+a.dataset.close).classList.add("hidden"));
 
 // ---------- sheet & tabs ----------
 function tab(t){document.querySelectorAll(".tabs a").forEach(a=>a.classList.toggle("on",a.dataset.tab===t));document.querySelectorAll(".tab").forEach(d=>d.classList.add("hidden"));$("#tab-"+t).classList.remove("hidden");$("#sheet").classList.remove("min");
-  if(t==="time"&&curPhase<0)phase(0);if(t==="clue"){loadPlaces().then(()=>{setLayer("clue",true);renderClueTab();});}}
+  if(t==="time"&&curPhase<0)phase(0);}
 document.querySelectorAll(".tabs a").forEach(a=>a.onclick=()=>tab(a.dataset.tab));
 $("#grab").onclick=()=>$("#sheet").classList.toggle("min");
 const sheetH=()=>$("#sheet").offsetHeight;
@@ -132,7 +126,7 @@ const PH=[
  {k:"洪武",t:"洪武 · 1368–1398",h:"从山西往外迁民",b:`<p>洪武年间朝廷多次从山西迁民到今河北、山东、河南屯垦。学者估计明初山西迁出约百万人。</p><p>河北枣强是二次分发点，山东北部很多村记载「自枣强迁来」。点城市看各县资料。</p><p class="sub">曹树基《中国移民史·明时期》</p>`,v:NORTH,f:["hongwu"],show:[],ming:true},
  {k:"靖难",t:"靖难 · 1399–1402",h:"燕王扫北",b:`<p>燕王朱棣起兵夺位，战事主要在今河北、山东一带，打了四年。河北民间说的「燕王扫北」就是这件事。</p><p>定县社会调查里，多数村说自己是燕王扫北后从山西洪洞迁来的。</p><p class="sub">李景汉《定县社会概况调查》</p>`,v:NORTH,f:[],show:[],ming:true,shade:true},
  {k:"永乐",t:"永乐 · 1403–1424",h:"充实北京周边，迁入赵县",b:`<p>永乐年间继续迁民，重点充实北京周边。赵县这一时期有移民迁入，也有军队屯垦建村。</p><p>《赵州乡土志》：卜氏「明永乐年间，自山西洪洞县迁至郡西卜家庄」。红色 5 村为山西迁来，黄色 4 村为屯垦建村。</p><p class="sub">清光绪《赵州乡土志》；80 年代赵县村名资料</p>`,v:NORTH,f:["yongle"],show:["hongdong_min","tunken"],ming:true,then:ZX},
- {k:"今天",t:"今天",h:"全部图层",b:`<p>赵县 265 个村里，24 个整理了来历，其余白点还没有。补齐需要 1984 年《赵县地名资料汇编》。</p><p>打开「村名线索」可以看冀晋鲁豫带「营、屯、铺」的村。</p>`,v:NORTH,f:["hongwu","yongle"],show:"all",ming:false}
+ {k:"今天",t:"今天",h:"全部图层",b:`<p>赵县 265 个村里，24 个整理了来历，其余白点还没有。补齐需要 1984 年《赵县地名资料汇编》。</p>`,v:NORTH,f:["hongwu","yongle"],show:"all",ming:false}
 ];
 let curPhase=-1;const shade=L.polygon(GEO["河北"].map(ll),{pane:"pBounds",stroke:false,fillColor:"#a8322a",fillOpacity:.14,interactive:false});
 $("#phases").innerHTML=PH.map((p,i)=>`<span class="chip" data-i="${i}">${p.k}</span>`).join("");
@@ -146,11 +140,6 @@ function phase(i){curPhase=i;const p=PH[i];
   map.closePopup();fly(p.v);
   if(p.then)setTimeout(()=>{if(curPhase===i)fly(p.then);},3000);
 }
-
-// ---------- clue tab ----------
-function renderClueTab(){const el=$("#tab-clue");if(!PLACES){el.innerHTML="<p>加载中…</p>";return;}
-  const rows=Object.keys(CLUE).map(k=>`<div class="bar"><span class="l"><span class="dot" style="background:${CLUE[k][0]}"></span>带「${k}」</span><span class="n">${clueCount[k]||0} 个</span></div><div class="sub" style="margin:-2px 0 4px 1.2em">${CLUE[k][1]}</div>`).join("");
-  el.innerHTML=`<h2>村名里的线索</h2><p>华北很多村名带着来历。下面是冀、晋、鲁、豫及京津 ${PLACES.length.toLocaleString()} 个村镇里，名字以这些字结尾的村：</p>${rows}<p class="sub">按名字自动筛，只能当线索。放大地图，点点看。</p>`;}
 
 // ---------- search / result ----------
 let me=null;
@@ -183,7 +172,7 @@ function run(cName,vName,sName){
       h+=`<h3>这个村的来历</h3>`;
       if(v.pilot){const p=v.pilot;h+=`<div class="card"><div class="kv"><b>类别</b><span style="color:${COLORS[p.category]}">● ${CATNAME[p.category]}</span></div>`+(p.era?`<div class="kv"><b>年代</b>${p.era}</div>`:"")+(p.surname?`<div class="kv"><b>姓氏</b>${p.surname}${p.origin?`，来自${p.origin}`:""}</div>`:"")+(p.note?`<div class="kv"><b>备注</b>${p.note}</div>`:"")+`<div class="kv"><b>依据</b><span>${p.evidence} ${CONF[p.confidence]}</span></div></div>`;}
       else h+=`<div class="card">还没整理到。${cc&&cc.n==="赵县"?"赵县需要 1984 年《赵县地名资料汇编》。":"这个县的逐村来历还没开始整理。"}</div>`;
-      const m=v.n.match(CLUE_RE);if(m)h+=`<p>村名带「${m[1]}」：${CLUE[m[1]][1]}。<span class="sub">（线索，不是结论）</span></p>`;
+      
       if(cc&&cc.n==="赵县"){const cnt={};for(const p of VIL.pilot)cnt[p.category]=(cnt[p.category]||0)+1;
         h+=`<h3>赵县已整理的 24 个村</h3>`+Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).map(k=>`<div class="bar"><span class="l"><span class="dot" style="background:${COLORS[k]}"></span>${CATNAME[k]}</span><span class="t" style="width:${cnt[k]*12}px;background:${COLORS[k]}"></span><span class="n">${cnt[k]}</span></div>`).join("")+`<p class="sub">还有 241 个村没整理。</p>`;}
       fly([[v.lat-.06,v.lon-.08],[v.lat+.06,v.lon+.08]],12.5);setTimeout(()=>zoomSync(),1300);
@@ -205,5 +194,5 @@ function run(cName,vName,sName){
 // deep link: #q=赵县,泥沟村,郝
 (function(){const m=decodeURIComponent(location.hash).match(/^#q=([^,]*),([^,]*),?(.*)$/);if(m){$("#qCounty").value=m[1];$("#qVillage").value=m[2];$("#qName").value=m[3];$("#landing").classList.add("hidden");run(m[1],m[2],m[3]);}
  else if(/^#(map|t=\d)/.test(location.hash)){$("#landing").classList.add("hidden");tab("time");phase(+(location.hash.match(/t=(\d)/)||[0,0])[1]);}
- else if(location.hash==="#clue"){$("#landing").classList.add("hidden");tab("clue");fly(NORTH);}})();
+})();
 $("#tab-result").innerHTML=`<p>在首页输入县、村、姓查询。</p><p><a class="lnk" onclick="document.querySelector('#landing').classList.remove('hidden')">去查询 →</a></p>`;
