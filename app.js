@@ -91,9 +91,14 @@ for(const v of VIL.pilot){PILOT[v.osm_name]=v;const m=L.circleMarker([v.lat,v.lo
 
 // ---------- surname layer ----------
 const surname=L.layerGroup();
-function loadPlaces(){if(PLACES)return Promise.resolve(PLACES);return fetch("data/places.json").then(r=>r.json()).then(d=>{PLACES=d;$("#stPlaces").textContent=(d.length/10000).toFixed(1)+"万";return d;});}
+let PLACES_P=null,PLACES_ERR=null;
+function loadPlaces(){if(PLACES)return Promise.resolve(PLACES);if(PLACES_P)return PLACES_P;
+  const timeout=new Promise(res=>setTimeout(()=>res("timeout"),25000));
+  PLACES_P=Promise.race([fetch("data/places.json").then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}),timeout]).then(d=>{if(d==="timeout")throw new Error("村名数据下载超时");PLACES=d;$("#stPlaces").textContent=(d.length/10000).toFixed(1)+"万";return d;})
+    .catch(e=>{PLACES_ERR=e.message||String(e);PLACES_P=null;return null;});
+  return PLACES_P;}
 const SN_RE=s=>new RegExp(`^[东西南北前后大小上下中新老]?${s}`);
-function surnamePlaces(s){const re=SN_RE(s);return PLACES.filter(p=>!p[3]&&re.test(p[0]));}
+function surnamePlaces(s){if(!PLACES)return[];const re=SN_RE(s);return PLACES.filter(p=>!p[3]&&re.test(p[0]));}
 function showSurname(s){surname.clearLayers();if(!s||!PLACES)return[];const list=surnamePlaces(s);
   for(const[n,la,lo]of list)L.circleMarker([la,lo],{renderer:cv,radius:3.2,color:"#fbf6ea",weight:.8,fillColor:"#0f766e",fillOpacity:.9}).bindPopup(`<b>${esc(n)}</b><br>名字以「${esc(s)}」开头的村。不一定是${esc(s)}姓建的村。`).addTo(surname);
   setLayer("surname",true);return list;}
@@ -152,7 +157,7 @@ $("#qVillage").addEventListener("input",acVillage);$("#qVillage").addEventListen
 $("#qCounty").addEventListener("input",acCounty);$("#qCounty").addEventListener("focus",acCounty);
 document.addEventListener("click",e=>{if(!e.target.closest(".acw"))document.querySelectorAll(".ac").forEach(b=>b.classList.add("hidden"));});
 $("#qCounty").addEventListener("change",onCounty);$("#qCounty").addEventListener("blur",()=>setTimeout(onCounty,200));
-$("#tryEx").onclick=e=>{e.preventDefault();$("#qCounty").value="赵县";$("#qVillage").value="东卜庄村";$("#qName").value="卜";onCounty();$("#q").requestSubmit();};
+$("#tryEx").onclick=e=>{e.preventDefault();$("#qCounty").value="赵县";$("#qVillage").value="东卜庄村";$("#qName").value="卜";onCounty();$("#q").onsubmit(e);};
 $("#btnSearch").onclick=$("#homeBtn").onclick=()=>$("#landing").classList.remove("hidden");
 $("#q").onsubmit=e=>{e.preventDefault();$("#landing").classList.add("hidden");const a=[$("#qCounty").value.trim(),$("#qVillage").value.trim(),$("#qName").value.trim()];history.replaceState(null,"","#q="+a.join(","));run(...a);};
 function findVillage(c,v){if(!v)return null;const norm=s=>s.replace(/村$/,"");
@@ -179,7 +184,12 @@ const T=(s,cls)=>`<span class="rtag ${cls||""}">${s}</span>`;
 
 function run(cName,vName,sName){
   const box=$("#tab-result");box.innerHTML="<p>查询中…</p>";$("#sheet").classList.remove("min");
-  loadPlaces().then(()=>{
+  const slow=setTimeout(()=>{if(/查询中/.test(box.textContent))box.innerHTML="<p>查询中…（第一次打开要下载约 1MB 的村名数据，网慢的话要等一会儿）</p>";},4000);
+  const go=()=>{clearTimeout(slow);try{runInner(cName,vName,sName,box);}catch(err){box.innerHTML=`<p>出错了：${esc(err.message)}</p><p class="sub">截图发给泪桥，或者刷新再试。</p>`;console.error(err);}};
+  const waitC=()=>COUNTIES.length?loadPlaces().then(go):setTimeout(waitC,300);waitC();
+}
+function runInner(cName,vName,sName,box){
+  {
     const c=COUNTIES.find(x=>x.n===cName)||COUNTIES.find(x=>cName&&x.n.startsWith(cName));
     const v=findVillage(c,vName);const s=sName?sName[0]:"";
     const cc=v?(countyOf(v.lat,v.lon)||c):c;const isZX=cc&&cc.n==="赵县";
@@ -247,8 +257,9 @@ function run(cName,vName,sName){
     box.querySelectorAll(".route").forEach(e=>e.onclick=()=>drawRoutes(+e.dataset.i));
     $("#allR").onclick=ev=>{ev.stopPropagation();drawRoutes(null);};
     if($("#showSN"))$("#showSN").onclick=()=>{refs.clearLayers();flows.clearLayers();parts=[];showSurname(s);fly(NORTH);};
+    if(PLACES_ERR&&!PLACES)box.insertAdjacentHTML("beforeend",`<p class="sub">村名数据没下载下来（${esc(PLACES_ERR)}），同姓村部分暂时缺失。刷新可以重试。</p>`);
     const only=new URLSearchParams(location.search).get("route");drawRoutes(only==null?null:+only);
-  });
+  }
 }
 const NORTH=[[34.6,111.0],[40.3,118.0]];
 (function(){const m=decodeURIComponent(location.hash).match(/^#q=([^,]*),([^,]*),?(.*)$/);if(m){$("#qCounty").value=m[1];$("#qVillage").value=m[2];$("#qName").value=m[3];$("#landing").classList.add("hidden");run(m[1],m[2],m[3]);}})();
