@@ -32,7 +32,7 @@ let COUNTIES=[],PREFS=[],PLACES=null;
 function ptIn(x,y,rings){for(const r of rings){let c=false;for(let i=0,j=r.length-1;i<r.length;j=i++){const[xi,yi]=r[i],[xj,yj]=r[j];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)c=!c;}if(c)return true;}return false;}
 function bbox(rings){let a=1e9,b=1e9,c=-1e9,d=-1e9;for(const r of rings)for(const[x,y]of r){if(x<a)a=x;if(y<b)b=y;if(x>c)c=x;if(y>d)d=y;}return[a,b,c,d];}
 fetch("data/prefs.json").then(r=>r.json()).then(d=>{PREFS=d;for(const p of d){p.bb=bbox(p.r);for(const r of p.r)L.polyline(ll(r),{pane:"pBounds",color:"#9c8661",weight:.8,opacity:.8,dashArray:"3 3",interactive:false}).addTo(bounds);}});
-fetch("data/counties.json").then(r=>r.json()).then(d=>{COUNTIES=d;const dl=$("#dlCounty");for(const c of d){c.bb=bbox(c.r);for(const r of c.r)L.polyline(ll(r),{pane:"pBounds",color:"#a8916c",weight:.5,opacity:.7,interactive:false}).addTo(countyLines);const o=document.createElement("option");o.value=c.n;dl.appendChild(o);}onCounty();});
+fetch("data/counties.json").then(r=>r.json()).then(d=>{COUNTIES=d;for(const c of d){c.bb=bbox(c.r);for(const r of c.r)L.polyline(ll(r),{pane:"pBounds",color:"#a8916c",weight:.5,opacity:.7,interactive:false}).addTo(countyLines);}onCounty();});
 fetch("data/rivers.json").then(r=>r.json()).then(d=>{for(const n in d){const major=["黄河","汾河","滹沱河","滏阳河","漳河","卫河","永定河","桑干河","子牙河","大清河","海河","沁河"].includes(n);let longest=null,lmax=0;
   for(const line of d[n]){L.polyline(line,{pane:"pRivers",color:"#6f9aa3",weight:n==="黄河"?2.4:(major?1.4:1),opacity:.85,interactive:false}).addTo(rivers);if(line.length>lmax){lmax=line.length;longest=line;}}
   if(longest){const m=longest[Math.floor(longest.length/2)];const mk=L.marker(m,{pane:"pLbl",icon:L.divIcon({className:"rv",html:n,iconSize:null}),interactive:false});mk.minZ=n==="黄河"?5:(major?7:9);mk.addTo(rivers);riverLabels.push(mk);}}
@@ -124,11 +124,34 @@ function refMark(lat,lon,label,html,color){L.circleMarker([lat,lon],{renderer:sv
 
 // ---------- search ----------
 let me=null,STEPS=[];
-function onCounty(){const name=$("#qCounty").value.trim();const c=COUNTIES.find(x=>x.n===name)||COUNTIES.find(x=>name&&x.n.startsWith(name));const dl=$("#dlVillage");dl.innerHTML="";
-  if(!c)return;const add=v=>{const o=document.createElement("option");o.value=v;dl.appendChild(o);};
-  if(c.n==="赵县"){for(const v of VIL.pilot)add(v.osm_name);for(const v of VIL.others)add(v.n);}
-  else loadPlaces().then(()=>{const[a,b,cc,d]=c.bb;for(const p of PLACES)if(p[2]>=a&&p[2]<=cc&&p[1]>=b&&p[1]<=d&&ptIn(p[2],p[1],c.r))add(p[0]);});}
-$("#qCounty").addEventListener("change",onCounty);
+// ---------- autocomplete ----------
+let VPOOL=[],VPOOL_C=null;
+const PREF_NAME={};
+function curCounty(){const name=$("#qCounty").value.trim();return COUNTIES.find(x=>x.n===name)||COUNTIES.find(x=>name&&x.n.startsWith(name))||null;}
+function onCounty(){const c=curCounty();if(!c||c===VPOOL_C)return;VPOOL_C=c;VPOOL=[];
+  const towns=[];const build=()=>{
+    if(PLACES){const[a,b,cc,d]=c.bb;for(const p of PLACES)if(p[2]>=a&&p[2]<=cc&&p[1]>=b&&p[1]<=d&&ptIn(p[2],p[1],c.r))(p[3]?towns:VPOOL).push({n:p[0],lat:p[1],lon:p[2]});}
+    else if(c.n==="赵县"){for(const v of VIL.pilot)VPOOL.push({n:v.osm_name,lat:v.lat,lon:v.lon});for(const o of VIL.others)VPOOL.push({n:o.n,lat:o.lat,lon:o.lon});}
+    for(const v of VPOOL){let best=null,bd=1e9;for(const t of towns){const dd=(t.lat-v.lat)**2+(t.lon-v.lon)**2;if(dd<bd){bd=dd;best=t;}}v.town=best?best.n:"";v.known=c.n==="赵县"&&VIL.pilot.some(p=>p.osm_name===v.n);}
+    VPOOL.sort((x,y)=>x.n.localeCompare(y.n,"zh"));};
+  build();loadPlaces().then(()=>{if(VPOOL_C===c){VPOOL=[];build();}});}
+function acShow(box,items,onPick){if(!items.length){box.classList.add("hidden");return;}
+  box.innerHTML=items.map((it,i)=>`<div class="ac-i" data-i="${i}">${it.html}</div>`).join("");box.classList.remove("hidden");
+  box.querySelectorAll(".ac-i").forEach(el=>el.onmousedown=el.ontouchstart=ev=>{ev.preventDefault();onPick(items[+el.dataset.i]);box.classList.add("hidden");});}
+function hl(n,q){if(!q)return esc(n);let out="";for(const ch of n)out+=q.includes(ch)?`<b class="m">${esc(ch)}</b>`:esc(ch);return out;}
+function acVillage(){const q=$("#qVillage").value.trim().replace(/村$/,"");const box=$("#acVillage");
+  if(!VPOOL.length){box.innerHTML=`<div class="ac-i sub">先填县</div>`;box.classList.remove("hidden");return;}
+  let list=q?VPOOL.filter(v=>[...q].every(ch=>v.n.includes(ch))):VPOOL;
+  list=list.slice().sort((a,b)=>(b.n.startsWith(q)-a.n.startsWith(q))||(a.n.length-b.n.length));
+  const total=list.length;list=list.slice(0,40);
+  acShow(box,list.map(v=>({v,html:`<span>${hl(v.n,q)}</span><span class="sub">${v.town?esc(v.town)+"附近":""}${v.known?' · <span style="color:#2e6b3a">已整理</span>':""}</span>`})).concat(total>40?[{v:null,html:`<span class="sub">还有 ${total-40} 个，多输一个字缩小范围</span>`}]:[]),it=>{if(it.v)$("#qVillage").value=it.v.n;});}
+function acCounty(){const q=$("#qCounty").value.trim().replace(/[县市区]$/,"");const box=$("#acCounty");if(!q){box.classList.add("hidden");return;}
+  const list=COUNTIES.filter(c=>[...q].every(ch=>c.n.includes(ch))).sort((a,b)=>(b.n.startsWith(q)-a.n.startsWith(q))||(a.n.length-b.n.length)).slice(0,20);
+  acShow(box,list.map(c=>({c,html:`<span>${hl(c.n,q)}</span><span class="sub">${String(c.p||c.c).startsWith("14")?"山西":"河北"}</span>`})),it=>{$("#qCounty").value=it.c.n;$("#qVillage").value="";onCounty();setTimeout(()=>$("#qVillage").focus(),50);});}
+$("#qVillage").addEventListener("input",acVillage);$("#qVillage").addEventListener("focus",acVillage);
+$("#qCounty").addEventListener("input",acCounty);$("#qCounty").addEventListener("focus",acCounty);
+document.addEventListener("click",e=>{if(!e.target.closest(".acw"))document.querySelectorAll(".ac").forEach(b=>b.classList.add("hidden"));});
+$("#qCounty").addEventListener("change",onCounty);$("#qCounty").addEventListener("blur",()=>setTimeout(onCounty,200));
 $("#tryEx").onclick=e=>{e.preventDefault();$("#qCounty").value="赵县";$("#qVillage").value="东卜庄村";$("#qName").value="卜";onCounty();$("#q").requestSubmit();};
 $("#btnSearch").onclick=$("#homeBtn").onclick=()=>$("#landing").classList.remove("hidden");
 $("#q").onsubmit=e=>{e.preventDefault();$("#landing").classList.add("hidden");const a=[$("#qCounty").value.trim(),$("#qVillage").value.trim(),$("#qName").value.trim()];history.replaceState(null,"","#q="+a.join(","));run(...a);};

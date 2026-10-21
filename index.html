@@ -18,12 +18,11 @@
     <h1>你家的村子<br>是从哪来的？</h1>
     <p class="lead">华北很多村子是明朝初年从山西迁来的人建的，也有不少村子比那更早。输入老家，看看县志、地名资料里怎么记的。</p>
     <form id="q" autocomplete="off">
-      <label class="field"><span>县</span><input id="qCounty" list="dlCounty" placeholder="例如：赵县" value="赵县"></label>
-      <label class="field"><span>村</span><input id="qVillage" list="dlVillage" placeholder="例如：泥沟村"></label>
+      <div class="acw"><label class="field"><span>县</span><input id="qCounty" placeholder="输入县名，如：赵县" value="赵县" autocomplete="off"></label><div class="ac hidden" id="acCounty"></div></div>
+      <div class="acw"><label class="field"><span>村</span><input id="qVillage" placeholder="输入一个字就能选，如：泥" autocomplete="off"></label><div class="ac hidden" id="acVillage"></div></div>
       <label class="field"><span>姓</span><input id="qName" maxlength="2" placeholder="例如：郝"></label>
       <button class="btn" type="submit">查 一 查</button>
     </form>
-    <datalist id="dlCounty"></datalist><datalist id="dlVillage"></datalist>
     <div class="try"><a href="#" id="tryEx">示例：赵县 · 东卜庄村 · 卜 →</a></div>
     <div class="note">目前只有河北赵县整理了逐村来历；其他县可以查姓氏分布和村名线索。</div>
     <div class="stats"><div><b id="stPlaces">13万</b>华北村镇</div><div><b>24</b>已整理来历</div><div><b>11</b>收录县份记载</div></div>
