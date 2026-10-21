@@ -109,3 +109,6 @@ ul.near{padding-left:16px;margin:2px 0}
 .ac-i:active,.ac-i:hover{background:#f1e6cf}
 .ac-i .sub{font-size:12px;white-space:nowrap}
 b.m{color:var(--red)}
+
+#mapLegend{position:absolute;top:46px;left:8px;z-index:900;background:#fbf6eaee;border:1px solid var(--line);border-radius:5px;padding:4px 8px;font-size:11px;line-height:1.65;pointer-events:none}
+#mapLegend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:0}

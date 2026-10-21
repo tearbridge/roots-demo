@@ -45,7 +45,7 @@ function updNames(){nameLayer.clearLayers();if(map.getZoom()<11.5)return;const b
   const add=(nm,la,lo)=>{if(n>260||!b.contains([la,lo]))return;n++;L.marker([la,lo],{pane:"pLbl",icon:L.divIcon({className:"city",html:esc(nm),iconSize:null,iconAnchor:[-5,5]}),interactive:false}).addTo(nameLayer);};
   if(PLACES){for(const p of PLACES)add(p[0],p[1],p[2]);}else{for(const v of VIL.pilot)add(v.osm_name,v.lat,v.lon);for(const o of VIL.others)add(o.n,o.lat,o.lon);}}
 map.on("moveend",updNames);
-function zoomSync(){const z=map.getZoom();
+function zoomSync(){const z=map.getZoom();{const lg=document.getElementById("mapLegend");if(lg)lg.classList.toggle("hidden",!(want("zx")&&z>=8.5));}
   for(const m of riverLabels){const el=m.getElement();if(el)el.style.display=z>=m.minZ?"":"none";}
   if(want("bounds")&&z>=8)countyLines.addTo(map);else map.removeLayer(countyLines);
   if(want("zx")&&z>=8.5)zxLayer.addTo(map);else map.removeLayer(zxLayer);
