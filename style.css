@@ -1,0 +1,82 @@
+:root{--paper:#f3ead8;--paper2:#fbf6ea;--ink:#2b2118;--muted:#7a6a55;--red:#a8322a;--line:#cdbb98}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--paper);color:var(--ink);font-family:"Songti SC","STSong","Noto Serif CJK SC","Source Han Serif SC",serif;-webkit-text-size-adjust:100%}
+a{color:var(--red);text-decoration:none}
+button{font-family:inherit}
+#map{position:absolute;inset:0;background:#efe4cc}
+.leaflet-container{background:#efe4cc;font-family:inherit}
+.leaflet-control-attribution{font-size:9px;background:#fbf6eacc!important}
+.hidden{display:none!important}
+
+/* landing */
+#landing{position:absolute;inset:0;z-index:2000;overflow:auto;background:var(--paper) radial-gradient(rgba(120,90,50,.06) 1px,transparent 1px);background-size:4px 4px}
+#landing .wrap{max-width:520px;margin:0 auto;min-height:100%;padding:44px 24px 28px;display:flex;flex-direction:column}
+.seal{display:inline-block;border:2px solid var(--red);color:var(--red);padding:1px 7px;font-size:12px;letter-spacing:.2em;transform:rotate(-3deg);margin-bottom:14px;width:max-content;border-radius:2px}
+.kicker{font-size:13px;color:var(--red);letter-spacing:.2em}
+#landing h1{margin:10px 0 12px;font-size:34px;line-height:1.25;letter-spacing:.08em}
+.lead{font-size:16px;line-height:1.75;margin:0 0 22px;color:#5a4a38}
+#q{display:flex;flex-direction:column;gap:10px}
+.field{display:flex;align-items:center;padding:11px 14px;font-size:17px;border:1px solid #9c8661;background:var(--paper2);border-radius:3px}
+.field span{width:2.6em;flex:none;color:var(--muted)}
+.field input{border:0;background:none;font:inherit;flex:1;outline:none;color:var(--ink);min-width:0}
+.btn{margin-top:4px;padding:13px;font-size:17px;font-weight:700;background:var(--red);color:var(--paper2);border:0;border-radius:3px;letter-spacing:.3em}
+.try{margin-top:12px;font-size:14px}
+.note{margin-top:14px;font-size:12px;color:var(--muted);line-height:1.6}
+.stats{margin-top:auto;padding-top:16px;display:flex;gap:18px;font-size:13px;color:var(--muted);border-top:1px dashed var(--line)}
+.stats b{display:block;font-size:21px;color:var(--ink)}
+
+/* top */
+#top{position:absolute;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;padding:8px 10px calc(10px);background:linear-gradient(#f3ead8f0 70%,#f3ead800)}
+#top .ttl{font-size:16px;cursor:pointer}
+#top .ttl span{font-size:11px;color:var(--red);border:1px solid var(--red);padding:0 4px;margin-left:6px;border-radius:2px}
+#top .btns button{border:1px solid #9c8661;background:var(--paper2);color:var(--ink);border-radius:14px;padding:3px 10px;font-size:13px;margin-left:4px}
+
+/* popups */
+.pop{position:absolute;top:44px;right:8px;z-index:1500;background:var(--paper2);border:1px solid var(--line);border-radius:6px;padding:8px 12px 10px;font-size:14px;box-shadow:0 4px 16px rgba(60,40,20,.15);max-width:calc(100vw - 16px)}
+.pop label{display:block;margin:5px 0;white-space:nowrap}
+.pop-h{font-weight:700;margin-bottom:4px;display:flex;justify-content:space-between;gap:20px}
+.pop .x{color:var(--muted);cursor:pointer;font-weight:400}
+.pop.big{left:8px;right:8px;max-height:75vh;overflow:auto}
+.about-body{font-size:14px;line-height:1.7}
+.about-body h3{font-size:15px;margin:12px 0 2px}
+.about-body ul{padding-left:18px;margin:4px 0}
+.legend{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:12px;line-height:1.7}
+.legend i,.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+
+/* sheet */
+#sheet{position:absolute;left:0;right:0;bottom:0;z-index:1000;background:var(--paper2);border-top:1px solid var(--line);box-shadow:0 -4px 14px rgba(60,40,20,.08);padding:4px 14px calc(10px + env(safe-area-inset-bottom));height:44vh;display:flex;flex-direction:column;transition:height .25s}
+#sheet.min{height:92px}
+#grab{width:40px;height:4px;background:var(--line);border-radius:2px;margin:4px auto 6px;cursor:pointer;flex:none}
+.tabs{display:flex;gap:16px;border-bottom:1px solid var(--line);flex:none}
+.tabs a{color:var(--muted);padding:4px 0 6px;font-size:15px;cursor:pointer}
+.tabs a.on{color:var(--ink);font-weight:700;border-bottom:2px solid var(--red)}
+.tab{overflow:auto;flex:1;padding-top:8px;font-size:14px;line-height:1.7}
+.tab h2{font-size:19px;margin:2px 0 2px}
+.tab h3{font-size:15px;margin:12px 0 2px;color:var(--red);letter-spacing:.05em}
+.tab p{margin:4px 0}
+.sub{color:var(--muted);font-size:12px}
+.card{border:1px solid var(--line);background:#fffaf0;border-radius:4px;padding:8px 10px;margin:6px 0}
+.kv{display:flex;border-bottom:1px dashed var(--line);padding:3px 0}
+.kv:last-child{border:0}
+.kv b{width:4.5em;flex:none;color:var(--muted);font-weight:400}
+.q{color:var(--red);font-weight:700}
+.tag{font-size:11px;border:1px solid currentColor;border-radius:3px;padding:0 4px;margin-left:3px;white-space:nowrap}
+.tA{color:#2e6b3a}.tB{color:#b8892f}.tC{color:#8a7a6a}
+.bar{display:flex;align-items:center;margin:3px 0;font-size:13px}
+.bar .l{width:9em;flex:none}.bar .t{height:12px;background:var(--red);opacity:.8;border-radius:2px}.bar .n{margin-left:6px;color:var(--muted)}
+.chip{display:inline-block;border:1px solid #9c8661;border-radius:14px;padding:2px 10px;margin:2px 4px 2px 0;font-size:13px;cursor:pointer;background:#fffaf0}
+.chip.on{background:var(--ink);color:var(--paper2);border-color:var(--ink)}
+#phases{white-space:nowrap;overflow-x:auto;padding-bottom:4px}
+.lnk{cursor:pointer;color:var(--red)}
+ul.near{padding-left:16px;margin:2px 0}
+
+/* map labels */
+.lbl{font-size:13px;color:#8a7556;letter-spacing:.4em;white-space:nowrap;text-shadow:0 0 3px #efe4cc,0 0 3px #efe4cc}
+.city{font-size:11px;color:var(--ink);white-space:nowrap;text-shadow:0 0 3px #fbf6ea,0 0 3px #fbf6ea,0 0 2px #fbf6ea}
+.city.key{color:var(--red);font-weight:700;font-size:12px}
+.city.ming{color:#6b4f8a;font-size:11px}
+.rv{font-size:10px;color:#5d7f86;white-space:nowrap;font-style:italic;text-shadow:0 0 3px #efe4cc}
+.me{background:var(--red);color:#fff;border-radius:3px;font-size:13px;font-weight:700;text-align:center;line-height:22px;box-shadow:0 0 0 2px #fbf6ea,0 2px 6px rgba(0,0,0,.3)}
+.leaflet-popup-content{font-size:13px;line-height:1.6;margin:10px 12px}
+.leaflet-popup-content-wrapper{background:var(--paper2);border-radius:5px}
+.leaflet-popup-tip{background:var(--paper2)}
