@@ -137,9 +137,18 @@ function findVillage(c,v){if(!v)return null;const norm=s=>s.replace(/村$/,"");
   const inC=c?cand.filter(p=>ptIn(p[2],p[1],c.r)):cand;const p=(inC[0]||cand[0]);return p?{n:p[0],lat:p[1],lon:p[2]}:null;}
 const kmTxt=d=>d<1?"不到 1 公里":d.toFixed(0)+" 公里";
 function pilotLine(p,from){return `<div class="card"><b>${p.osm_name}</b> <span style="color:${COLORS[p.category]}">● ${CATNAME[p.category]}</span>${from?` <span class="sub">离你们村 ${kmTxt(km(from,[p.lat,p.lon]))}</span>`:""}<br>${p.era||""}${p.surname&&p.origin?`；${p.surname}氏来自${p.origin}`:""}<div class="sub">${p.evidence} ${CONF[p.confidence]}</div></div>`;}
-function showStep(i){const s=STEPS[i];if(!s)return;document.querySelectorAll(".step").forEach((e,j)=>e.classList.toggle("on",j===i));
-  refs.clearLayers();flows.clearLayers();parts=[];setLayer("surname",false);map.closePopup();
-  pilotMk.forEach(m=>m.setStyle({fillOpacity:1,opacity:1}));s.show&&s.show();}
+const SX_SRC={"洪洞":[36.270,111.672],"太原":[37.87,112.55],"阳曲":[38.06,112.67],"平定":[37.79,113.63],"繁峙":[39.19,113.27],"泽州":[35.49,112.85],"潞州":[36.19,113.11]};
+const RC={local:"#2e6b3a",hongdong:"#a8322a",shanxi:"#b8892f",branch:"#0f766e",junhu:"#6b4f8a"};
+let ROUTESET=[],HERE=null;
+function lineCurve(a,b,color,dashed,particles){const c=ctrl(a,b),pts=[];for(let i=0;i<=30;i++)pts.push(bez(a,c,b,i/30));
+  L.polyline(pts,{pane:"pFlows",color,weight:2,opacity:dashed?.8:.55,dashArray:dashed?"5 6":null,interactive:false}).addTo(flows);
+  if(particles)for(let j=0;j<particles;j++)parts.push({m:L.circleMarker(a,{renderer:cv,radius:2.6,stroke:false,fillColor:color,fillOpacity:.9,interactive:false}).addTo(flows),a,c,b,t:Math.random(),v:.003+Math.random()*.004});}
+function drawRoutes(only){refs.clearLayers();flows.clearLayers();parts=[];map.closePopup();const pts=[HERE];
+  ROUTESET.forEach((r,i)=>{if(only!=null&&only!==i)return;r.draw(pts);});
+  document.querySelectorAll(".route").forEach((e,i)=>e.classList.toggle("dim",only!=null&&only!==i));
+  fly(L.latLngBounds(pts).pad(.12));}
+function nearestDocs(here,n){return Object.keys(DST).filter(k=>k!=="赵县"&&DPOP[k]).map(k=>[k,km(here,DST[k])]).sort((a,b)=>a[1]-b[1]).slice(0,n);}
+const T=(s,cls)=>`<span class="rtag ${cls||""}">${s}</span>`;
 
 function run(cName,vName,sName){
   const box=$("#tab-result");box.innerHTML="<p>查询中…</p>";$("#sheet").classList.remove("min");
@@ -147,50 +156,67 @@ function run(cName,vName,sName){
     const c=COUNTIES.find(x=>x.n===cName)||COUNTIES.find(x=>cName&&x.n.startsWith(cName));
     const v=findVillage(c,vName);const s=sName?sName[0]:"";
     const cc=v?(countyOf(v.lat,v.lon)||c):c;const isZX=cc&&cc.n==="赵县";
-    const here=v?[v.lat,v.lon]:(cc?[cc.ct[1],cc.ct[0]]:null);
-    const hereName=v?v.n:(cc?cc.n:"");
-    if(me)map.removeLayer(me);
-    if(here)me=L.marker(here,{icon:L.divIcon({className:"me",html:s?esc(s):"村",iconSize:[22,22],iconAnchor:[11,11]}),zIndexOffset:1000}).bindPopup(`<b>${esc(hereName)}</b>`).addTo(map);
-    const near=here?[[here[0]-.08,here[1]-.1],[here[0]+.08,here[1]+.1]]:null;
+    const here=v?[v.lat,v.lon]:(cc?[cc.ct[1],cc.ct[0]]:null);HERE=here;
+    const hereName=v?v.n:(cc?cc.n:"");const mine=v&&v.pilot;
+    if(me)map.removeLayer(me);setLayer("surname",false);
+    if(!here){box.innerHTML=`<h2>没找到「${esc(vName||cName)}」</h2><p>换个写法试试（带不带「村」「县」字都可以）。</p>`;return;}
+    me=L.marker(here,{icon:L.divIcon({className:"me",html:s?esc(s):"村",iconSize:[22,22],iconAnchor:[11,11]}),zIndexOffset:1000}).bindPopup(`<b>${esc(hereName)}</b>`).addTo(map);
+    const inShanxi=cc&&String(cc.p||cc.c).startsWith("14");
     const SN=(s&&SURN[s])||[];
-    STEPS=[];
-    // 姓氏源头
-    const src=SN.filter(r=>r.era==="源头");
-    if(src.length)STEPS.push({era:"姓氏源头",ttl:`${esc(s)}姓的老家`,h:src.map(r=>`<div class="card">${r.t}<div class="sub">${r.src} ${CONF[r.cf]||""}</div></div>`).join(""),show(){const pts=here?[here]:[];for(const r of src){refMark(r.lat,r.lon,r.place,`<b>${r.place}</b><br>${r.t}`,"#0f766e");pts.push([r.lat,r.lon]);}fly(L.latLngBounds(pts).pad(.3));}});
-    // 明以前
-    if(isZX){const pre=VIL.pilot.filter(p=>p.category==="pre_ming").map(p=>[p,km(here,[p.lat,p.lon])]).sort((a,b)=>a[1]-b[1]);
-      const mine=v&&v.pilot;let h="";
-      if(mine&&mine.category==="pre_ming")h+=`<p><b>${mine.osm_name}明代以前就有了。</b></p>`+pilotLine(mine);
-      else if(mine)h+=`<p>${esc(hereName)}是${(mine.era||"明代").split(/[；，(（]/)[0]}才有的。在它之前，附近已经有这些村：</p>`+pre.slice(0,3).map(([p])=>pilotLine(p,here)).join("");
-      else h+=`<p>${esc(hereName)}这时候有没有，还没查到。赵县这些村那时已经有了，离你们村最近的：</p>`+pre.slice(0,3).map(([p])=>pilotLine(p,here)).join("");
-      STEPS.push({era:"明代以前",ttl:mine&&mine.category==="pre_ming"?"你们村早就有了":(mine?"建村以前，附近已有村子":"你们村附近早就有村子"),h,show(){for(const[p]of pre.slice(0,3))refMark(p.lat,p.lon,p.osm_name,pilotHtml(p),COLORS.pre_ming);fly(near,11.5);}});}
-    // 明初
-    {let h=`<p class="sub">背景：元末战乱后华北人口大减，明洪武、永乐年间朝廷多次从山西迁民到冀鲁豫，学者估计约百万人（曹树基《中国移民史·明时期》）。${isZX?"赵县当时是真定府赵州。":""}</p>`;let any=false;
-      const mine=v&&v.pilot;
-      if(mine&&(mine.category==="hongdong_min"||mine.category==="tunken")){h+=`<p><b>你们村就是这时候来的：</b></p>`+pilotLine(mine);any=true;}
-      let mig=[];if(isZX){mig=VIL.pilot.filter(p=>(p.category==="hongdong_min"||p.category==="tunken")&&p!==mine).map(p=>[p,km(here,[p.lat,p.lon])]).sort((a,b)=>a[1]-b[1]).slice(0,3);
-        if(mig.length){h+=`<p>你们附近有记载的明初移民村：</p>`+mig.map(([p])=>pilotLine(p,here)).join("");any=true;}}
-      const snM=SN.filter(r=>(r.era==="明初"||r.era==="元末")&&!(v&&r.place.endsWith(v.n))).sort((a,b)=>here?km(here,[a.lat,a.lon])-km(here,[b.lat,b.lon]):0);
-      if(snM.length){h+=`<p>文献里的${esc(s)}姓迁徙：</p>`+snM.map(r=>`<div class="card">${r.t}${here?` <span class="sub">离你们村 ${kmTxt(km(here,[r.lat,r.lon]))}</span>`:""}<div class="sub">${r.src} ${CONF[r.cf]||""}</div></div>`).join("");any=true;}
-      if(any)STEPS.push({era:"明初 · 1368–1424",ttl:"这一带的人从哪来",h,show(){if(here)route(SRC["洪洞"],here,false);
-        const pts=[here,SRC["洪洞"]].filter(Boolean);for(const[p]of mig){refMark(p.lat,p.lon,p.osm_name,pilotHtml(p),COLORS[p.category]);pts.push([p.lat,p.lon]);}
-        for(const r of snM){refMark(r.lat,r.lon,r.place,`<b>${r.place}</b><br>${r.t}<br><span class='sub'>${r.src}</span>`,"#0f766e");pts.push([r.lat,r.lon]);}
-        refMark(SRC["洪洞"][0],SRC["洪洞"][1],"洪洞（大槐树）","<b>洪洞 · 大槐树</b><br>传说中明初移民集合出发的地方。实际迁出地遍及山西多个州县。");
-        fly(L.latLngBounds(pts).pad(.15));}});}
-    // 你家
-    if(v||s)STEPS.push({era:"你家",ttl:s?`${esc(hereName)}${esc(s)}家`:esc(hereName),h:`<div class="card"><div class="kv"><b>始祖</b><span class="q">？</span></div><div class="kv"><b>迁自</b><span class="q">？县 ？村</span></div><div class="kv"><b>年代</b><span class="q">？</span></div><div class="kv"><b>字辈</b><span class="q">？</span></div></div><p class="sub">这几项要看家里的族谱或老人口述。${v&&!v.pilot?(isZX?"你们村的来历还没整理到，需要 1984 年《赵县地名资料汇编》。":"这个县的逐村来历还没开始整理。"):""}</p>`,
-      show(){if(here){route(SRC["洪洞"],here,true);refMark(SRC["洪洞"][0],SRC["洪洞"][1],"洪洞？","<b>洪洞？</b><br>虚线：待族谱确认。");fly(L.latLngBounds([here,SRC["洪洞"]]).pad(.2));}}});
-    // 今天
+    const sameS=s?surnamePlaces(s).map(p=>[p,km(here,[p[1],p[2]])]).filter(x=>x[1]>.3&&x[1]<45).sort((a,b)=>a[1]-b[1]):[];
+    const known=mine&&mine.origin?mine:null;
+    ROUTESET=[];
+    // 1 洪洞
+    if(!inShanxi){const ev=[];
+      if(known&&/洪洞/.test(known.origin))ev.push(`<b>${known.osm_name}有记载：${known.era}，${known.surname}氏自山西洪洞迁来。</b> <span class="sub">${known.evidence}</span> ${CONF[known.confidence]}`);
+      for(const r of SN.filter(r=>/洪洞/.test(r.t)&&!(v&&r.place.endsWith(v.n))).sort((a,b)=>km(here,[a.lat,a.lon])-km(here,[b.lat,b.lon])))ev.push(`${r.t} <span class="sub">离你们 ${kmTxt(km(here,[r.lat,r.lon]))} · ${r.src}</span> ${CONF[r.cf]||""}`);
+      if(isZX){const nb=VIL.pilot.filter(p=>/洪洞/.test(p.origin||"")&&p!==mine).map(p=>[p,km(here,[p.lat,p.lon])]).sort((a,b)=>a[1]-b[1]).slice(0,2);
+        if(nb.length)ev.push("附近有记载从洪洞来的村："+nb.map(([p,d])=>`${p.osm_name}（${p.surname}氏，${kmTxt(d)}）`).join("、"));}
+      const nd=nearestDocs(here,1)[0];if(nd)ev.push(`离你们最近的有记载的县：${nd[0]}（${kmTxt(nd[1])}）——${DPOP[nd[0]]}`);
+      ev.push("北方很多家族都有「山西洪洞大槐树」的说法。学者指出其中一部分是后来认下来的共同记忆。");
+      ROUTESET.push({k:"hongdong",ttl:"明初从山西洪洞迁来",era:"1368–1424",tag:known&&/洪洞/.test(known.origin)?T("有记载","ok"):T("最常见的说法"),ev,gp:"族谱始祖一栏写「自山西洪洞某村迁来」。",
+        draw(pts){lineCurve(SRC["洪洞"],here,RC.hongdong,false,8);refMark(SRC["洪洞"][0],SRC["洪洞"][1],"洪洞","<b>洪洞 · 大槐树</b>",RC.hongdong);pts.push(SRC["洪洞"]);}});}
+    // 2 山西其他州县
+    if(!inShanxi){const ev=[];const srcs=["太原","平定","泽州","潞州","阳曲","繁峙"];
+      ev.push("明初迁民不只来自洪洞。邻近县的记载里，迁出地还有太原、阳曲、繁峙、平定、泽州、潞州等。<span class='sub'>《赞皇地名资料汇编》（1983）、傅振伦《新河县迁民调查》</span>");
+      if(s==="郝")ev.push("郝姓郡望是「太原郝氏」，从太原一带迁来也说得通。<span class='sub'>传统说法</span>");
+      ROUTESET.push({k:"shanxi",ttl:"明初从山西别的州县迁来",era:"1368–1424",tag:T("常见"),ev,gp:"族谱写的是山西别的县名（如太原、平定、泽州）。",
+        draw(pts){for(const n of srcs){const p=SX_SRC[n];lineCurve(p,here,RC.shanxi,false,n==="太原"&&s==="郝"?6:3);refMark(p[0],p[1],n,`<b>${n}</b><br>明初迁民的迁出地之一`,RC.shanxi);pts.push(p);}}});}
+    // 3 附近同姓村分出
+    if(sameS.length){const top=sameS.slice(0,4);const ev=[];
+      ev.push(`离你们 45 公里内，名字以「${esc(s)}」开头的村有 ${sameS.length} 个：`+top.map(([p,d])=>`${esc(p[0])}（${kmTxt(d)}）`).join("、")+"。");
+      ev.push("华北常见的情况：先迁来的一支在某村落脚，人多了以后兄弟分家，另立新村。这些同姓村可能是你家的母村，也可能是同宗的另一支。");
+      ROUTESET.push({k:"branch",ttl:`从附近的${esc(s)}姓村分出来`,era:"明—清",tag:T("有线索"),ev,gp:`族谱始祖写的是本县或邻县的某个村，或者老人说跟${top[0]?esc(top[0][0][0]):""}是本家。`,
+        draw(pts){for(const[p]of top){lineCurve([p[1],p[2]],here,RC.branch,true,0);refMark(p[1],p[2],p[0],`<b>${esc(p[0])}</b><br>名字以「${esc(s)}」开头的村，离你们 ${kmTxt(km(here,[p[1],p[2]]))}`,RC.branch);pts.push([p[1],p[2]]);}}});}
+    // 4 本地老户
+    {const ev=[];let tag=T("可能");
+      if(mine&&mine.category==="pre_ming"){ev.push(`<b>${mine.osm_name}明代以前就有：${mine.era}</b> <span class="sub">${mine.evidence}</span> ${CONF[mine.confidence]}`);tag=T("有记载","ok");}
+      if(isZX){const pre=VIL.pilot.filter(p=>p.category==="pre_ming"&&p!==mine).map(p=>[p,km(here,[p.lat,p.lon])]).sort((a,b)=>a[1]-b[1]).slice(0,3);
+        ev.push("赵县已整理的 24 个村里，11 个明代以前就有。离你们最近的："+pre.map(([p,d])=>`${p.osm_name}（${kmTxt(d)}，${p.era}）`).join("、")+"。");}
+      else ev.push("元末华北人口大减，但没有全空，很多县都有明代以前的古村。");
+      ev.push("所以也可能是本地老户，元末战乱里留下来的。");
+      ROUTESET.push({k:"local",ttl:"本来就是本地人",era:"明以前",tag,ev,gp:"族谱没写从哪迁来，或者写的始祖年代早于明朝。",
+        draw(pts){L.circle(here,{radius:9000,color:RC.local,weight:1.5,dashArray:"4 4",fillColor:RC.local,fillOpacity:.08,interactive:false}).addTo(refs);
+          if(isZX)for(const p of VIL.pilot.filter(p=>p.category==="pre_ming").map(p=>[p,km(here,[p.lat,p.lon])]).sort((a,b)=>a[1]-b[1]).slice(0,3)){refMark(p[0].lat,p[0].lon,p[0].osm_name,pilotHtml(p[0]),RC.local);pts.push([p[0].lat,p[0].lon]);}
+          pts.push([here[0]-.1,here[1]-.12],[here[0]+.1,here[1]+.12]);}});}
+    // 5 军户
+    if(!inShanxi&&isZX){const ex=VIL.pilot.find(p=>p.osm_name==="东晏头村");
+      ROUTESET.push({k:"junhu",ttl:"明初作为军户迁来",era:"洪武—永乐",tag:T("少见"),ev:[`明初有不少卫所军户在华北落户，原籍各地都有。例子：赵县东晏头陈家，原籍南直隶蒙城（今安徽），洪武中为燕山右卫护军，子袭职后迁居此村。<span class="sub">《赵州乡土志》</span> ${CONF.A}`],gp:"族谱里提到某卫、某所、袭职、军籍。",
+        draw(pts){if(ex){refMark(ex.lat,ex.lon,"东晏头（军户例）",pilotHtml(ex),RC.junhu);pts.push([ex.lat,ex.lon]);}}});}
+    // order: known first; if one route is documented for this village, mark the rest as less likely
+    ROUTESET.sort((a,b)=>(/ok/.test(b.tag)?1:0)-(/ok/.test(a.tag)?1:0));
+    if(ROUTESET.some(r=>/ok/.test(r.tag)))ROUTESET.forEach(r=>{if(!/ok/.test(r.tag)){r.tag=T("可能性小");r.weak=true;}});
+    let h=`<h2>${esc(hereName)}${s?` · ${esc(s)}家`:""}</h2><div class="sub">${cc?esc(cc.n):""}${isZX?" · 明代属真定府赵州":""}</div>`;
+    h+=`<h3>可能的来路（${ROUTESET.length} 种）</h3><p class="sub">没有族谱也没关系，下面是按现有记载推出的几种可能。点一种，地图上只看这一条；<a class="lnk" id="allR">看全部</a></p>`;
+    h+=ROUTESET.map((r,i)=>`<div class="route${r.weak?" weak":""}" data-i="${i}" style="--rc:${RC[r.k]}"><div class="rt-h"><span class="rt-dot"></span><span class="rt-ttl">${r.ttl}</span>${r.tag}</div><div class="rt-era">${r.era}</div><ul>${r.ev.map(x=>`<li>${x}</li>`).join("")}</ul><div class="rt-gp">族谱上看：${r.gp}</div></div>`).join("");
     if(s){const list=surnamePlaces(s);const byP={};for(const p of list){const pr=provOf(p[1],p[2]);byP[pr]=(byP[pr]||0)+1;}
-      const nearS=here?list.map(p=>[p,km(here,[p[1],p[2]])]).filter(x=>x[1]>.3).sort((a,b)=>a[1]-b[1]).slice(0,5):[];
-      STEPS.push({era:"今天",ttl:`名字以「${esc(s)}」开头的村`,h:`<p>冀晋鲁豫京津一共 <b>${list.length}</b> 个：`+["河北","山西","山东","河南","北京","天津"].filter(k=>byP[k]).map(k=>`${k} ${byP[k]}`).join("，")+`。</p>`+(nearS.length?`<p>离你们村最近的：</p><ul class="near">`+nearS.map(([p,d])=>`<li>${esc(p[0])} <span class="sub">${kmTxt(d)}</span></li>`).join("")+`</ul>`:"")+`<p class="sub">名字以某字开头的村不一定是该姓建的，只是线索。</p>`,
-        show(){showSurname(s);if(nearS.length)fly(L.latLngBounds([here,...nearS.map(([p])=>[p[1],p[2]])]).pad(.2));else fly(NORTH);}});}
-    let h=v?`<h2>${esc(v.n)}${s?` · ${esc(s)}`:""}</h2><div class="sub">${cc?esc(cc.n):""}${isZX?" · 明代属真定府赵州":""}</div>`:(vName?`<h2>没找到「${esc(vName)}」</h2><p>换个写法试试（带不带「村」字都可以），或者只查姓。</p>`:`<h2>${esc(s)}姓</h2>`);
-    h+=STEPS.map((st,i)=>`<div class="step" data-i="${i}"><div class="st-h"><span class="st-era">${st.era}</span><span class="st-ttl">${st.ttl}</span><span class="st-go">地图 ›</span></div><div class="st-b">${st.h}</div></div>`).join("");
-    if(!STEPS.length)h+=`<p>这个县还没有整理到资料。可以输入姓，看同姓村的分布。</p>`;
-    box.innerHTML=h;
-    box.querySelectorAll(".step").forEach(e=>e.querySelector(".st-h").onclick=()=>showStep(+e.dataset.i));
-    if(STEPS.length)showStep(Math.min(STEPS.length-1,+(new URLSearchParams(location.search).get("step")||0)));else if(here)fly(near,11.5);
+      h+=`<h3>${esc(s)}姓村子的分布</h3><p>冀晋鲁豫京津名字以「${esc(s)}」开头的村一共 <b>${list.length}</b> 个：`+["河北","山西","山东","河南","北京","天津"].filter(k=>byP[k]).map(k=>`${k} ${byP[k]}`).join("，")+`。<a class="lnk" id="showSN">在地图上看</a></p><p class="sub">以某字开头的村不一定是该姓建的，只是线索。</p>`;}
+    h+=`<h3>家里能确认的</h3><div class="card"><div class="kv"><b>始祖</b><span class="q">？</span></div><div class="kv"><b>迁自</b><span class="q">？</span></div><div class="kv"><b>年代</b><span class="q">？</span></div><div class="kv"><b>字辈</b><span class="q">？</span></div></div><p class="sub">有族谱或老人口述，就能从上面几种里挑出真的那条。${v&&!v.pilot?(isZX?"你们村的来历还没整理到，需要 1984 年《赵县地名资料汇编》。":"这个县的逐村来历还没开始整理。"):""}</p>`;
+    box.innerHTML=h;box.scrollTop=0;
+    box.querySelectorAll(".route").forEach(e=>e.onclick=()=>drawRoutes(+e.dataset.i));
+    $("#allR").onclick=ev=>{ev.stopPropagation();drawRoutes(null);};
+    if($("#showSN"))$("#showSN").onclick=()=>{refs.clearLayers();flows.clearLayers();parts=[];showSurname(s);fly(NORTH);};
+    const only=new URLSearchParams(location.search).get("route");drawRoutes(only==null?null:+only);
   });
 }
 const NORTH=[[34.6,111.0],[40.3,118.0]];
