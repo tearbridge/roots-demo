@@ -190,7 +190,7 @@ function run(cName,vName,sName){
     if(!STEPS.length)h+=`<p>这个县还没有整理到资料。可以输入姓，看同姓村的分布。</p>`;
     box.innerHTML=h;
     box.querySelectorAll(".step").forEach(e=>e.querySelector(".st-h").onclick=()=>showStep(+e.dataset.i));
-    if(STEPS.length)showStep(0);else if(here)fly(near,11.5);
+    if(STEPS.length)showStep(Math.min(STEPS.length-1,+(new URLSearchParams(location.search).get("step")||0)));else if(here)fly(near,11.5);
   });
 }
 const NORTH=[[34.6,111.0],[40.3,118.0]];
