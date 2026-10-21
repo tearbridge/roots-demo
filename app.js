@@ -135,7 +135,10 @@ $("#q").onsubmit=e=>{e.preventDefault();$("#landing").classList.add("hidden");co
 function findVillage(c,v){if(!v)return null;const norm=s=>s.replace(/村$/,"");
   if(c&&c.n==="赵县"){const p=VIL.pilot.find(x=>norm(x.osm_name)===norm(v));if(p)return{n:p.osm_name,lat:p.lat,lon:p.lon,pilot:p};const o=VIL.others.find(x=>norm(x.n)===norm(v));if(o)return{n:o.n,lat:o.lat,lon:o.lon};}
   if(!PLACES)return null;const cand=PLACES.filter(p=>norm(p[0])===norm(v));
-  const inC=c?cand.filter(p=>ptIn(p[2],p[1],c.r)):cand;const p=(inC[0]||cand[0]);return p?{n:p[0],lat:p[1],lon:p[2]}:null;}
+  const inC=c?cand.filter(p=>ptIn(p[2],p[1],c.r)):cand;const p=inC[0];return p?{n:p[0],lat:p[1],lon:p[2]}:null;}
+function suggest(c,v){const key=v.replace(/村$/,"");const pool=c&&c.n==="赵县"?[...VIL.pilot.map(p=>p.osm_name),...VIL.others.map(o=>o.n)]:(c?PLACES.filter(p=>ptIn(p[2],p[1],c.r)).map(p=>p[0]):[]);
+  const sc=n=>{const m=n.replace(/村$/,"");if(m.includes(key))return 3;let k=0;for(const ch of key)if(m.includes(ch))k++;return k/key.length;};
+  return [...new Set(pool)].map(n=>[n,sc(n)]).filter(x=>x[1]>=.5).sort((a,b)=>b[1]-a[1]||a[0].length-b[0].length).slice(0,8).map(x=>x[0]);}
 const kmTxt=d=>d<1?"不到 1 公里":d.toFixed(0)+" 公里";
 function pilotLine(p,from){return `<div class="card"><b>${p.osm_name}</b> <span style="color:${COLORS[p.category]}">● ${CATNAME[p.category]}</span>${from?` <span class="sub">离你们村 ${kmTxt(km(from,[p.lat,p.lon]))}</span>`:""}<br>${p.era||""}${p.surname&&p.origin?`；${p.surname}氏来自${p.origin}`:""}<div class="sub">${p.evidence} ${CONF[p.confidence]}</div></div>`;}
 const SX_SRC={"洪洞":[36.270,111.672],"太原":[37.87,112.55],"阳曲":[38.06,112.67],"平定":[37.79,113.63],"繁峙":[39.19,113.27],"泽州":[35.49,112.85],"潞州":[36.19,113.11]};
@@ -160,7 +163,11 @@ function run(cName,vName,sName){
     const here=v?[v.lat,v.lon]:(cc?[cc.ct[1],cc.ct[0]]:null);HERE=here;
     const hereName=v?v.n:(cc?cc.n:"");const mine=v&&v.pilot;
     if(me)map.removeLayer(me);setLayer("surname",false);
-    if(!here){box.innerHTML=`<h2>没找到「${esc(vName||cName)}」</h2><p>换个写法试试（带不带「村」「县」字都可以）。</p>`;return;}
+    if(vName&&!v){const sg=c?suggest(c,vName):[];
+      box.innerHTML=`<h2>${c?esc(c.n)+"里":""}没找到「${esc(vName)}」</h2>`+(sg.length?`<p>是不是这几个：</p><p>${sg.map(n=>`<span class="chip sug">${esc(n)}</span>`).join("")}</p>`:"")+`<p class="sub">村名来自 OpenStreetMap，可能缺村或者写法不同。${c?"":"也没认出「"+esc(cName)+"」这个县，换个写法试试。"}</p>`;
+      box.querySelectorAll(".sug").forEach(e=>e.onclick=()=>{$("#qVillage").value=e.textContent;history.replaceState(null,"","#q="+[cName,e.textContent,sName].join(","));run(cName,e.textContent,sName);});
+      if(c)fly([[c.bb[1],c.bb[0]],[c.bb[3],c.bb[2]]]);return;}
+    if(!here){box.innerHTML=`<h2>没找到「${esc(cName)}」</h2><p>换个写法试试（带不带「县」字都可以）。</p>`;return;}
     me=L.marker(here,{icon:L.divIcon({className:"me",html:s?esc(s):"村",iconSize:[22,22],iconAnchor:[11,11]}),zIndexOffset:1000}).bindPopup(`<b>${esc(hereName)}</b>`).addTo(map);
     const inShanxi=cc&&String(cc.p||cc.c).startsWith("14");
     const SN=(s&&SURN[s])||[];
