@@ -94,7 +94,7 @@ const surname=L.layerGroup();
 let PLACES_P=null,PLACES_ERR=null;
 function loadPlaces(){if(PLACES)return Promise.resolve(PLACES);if(PLACES_P)return PLACES_P;
   const timeout=new Promise(res=>setTimeout(()=>res("timeout"),25000));
-  PLACES_P=Promise.race([fetch("data/places.json").then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}),timeout]).then(d=>{if(d==="timeout")throw new Error("村名数据下载超时");PLACES=d;$("#stPlaces").textContent=(d.length/10000).toFixed(1)+"万";return d;})
+  PLACES_P=Promise.race([fetch("data/places.json").then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}),timeout]).then(d=>{if(d==="timeout")throw new Error("村名数据下载超时");PLACES=d;return d;})
     .catch(e=>{PLACES_ERR=e.message||String(e);PLACES_P=null;return null;});
   return PLACES_P;}
 const SN_RE=s=>new RegExp(`^[东西南北前后大小上下中新老]?${s}`);
