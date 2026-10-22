@@ -1,4 +1,4 @@
-// 华北村庄来历图 · 试作版
+// 赵县村庄来历 · 试作版
 const COLORS={pre_ming:"#2e6b3a",hongdong_min:"#a8322a",shanxi_min:"#d0702a",tunken:"#b8892f",branch:"#0f766e",other_prov:"#6b4f8a",ming_local:"#4f6d8a",later:"#8a7a6a",junhu:"#6b4f8a",unknown:"#bbb"};
 const CATNAME={pre_ming:"明代以前就有",hongdong_min:"明初自山西洪洞迁来",shanxi_min:"明初自山西他县迁来",tunken:"明初屯垦建村",branch:"从附近村分出",other_prov:"自外省迁来",ming_local:"明代建村",later:"清代以后建村",junhu:"明初军户迁来",unknown:"建村年代不详"};
 const CONF={T:'<span class="tag tC">传统说法</span>',A:'<span class="tag tA">A 碑刻/官修志书</span>',B:'<span class="tag tB">B 新编志书转引</span>',C:'<span class="tag tC">C 口传</span>'};
@@ -262,6 +262,7 @@ function runInner(cName,vName,sName,box){
     if(ROUTESET.some(r=>/ok/.test(r.tag)))ROUTESET.forEach(r=>{if(!/ok/.test(r.tag)){r.tag=T("可能性小");r.weak=true;}});
     let h=`<h2>${esc(hereName)}${s?` · ${esc(s)}家`:""}</h2><div class="sub">${cc?esc(cc.n):""}${isZX?" · 明代属真定府赵州":""}</div>`;
     if(mine)h+=`<h3>书里怎么写你们村</h3><div class="card">${esc(mine.history)}<div class="sub">${mine.evidence} ${CONF[mine.confidence]}${mine.page?` · 原书第 ${mine.page} 页`:""}</div></div>`;else if(isZX&&v)h+=`<p class="sub">《赵县地名资料汇编》（1984）里没有「${esc(v.n)}」的单独条目。</p>`;
+    h+=`<div class="disc">下面是记载和可能，不是你家的定论。你家具体从哪来，以自家族谱为准。</div>`;
     h+=`<h3>可能的来路（${ROUTESET.length} 种）</h3><p class="sub">没有族谱也没关系，下面是按现有记载推出的几种可能。点一种，地图上只看这一条；<a class="lnk" id="allR">看全部</a></p>`;
     h+=ROUTESET.map((r,i)=>`<div class="route${r.weak?" weak":""}" data-i="${i}" style="--rc:${RC[r.k]}"><div class="rt-h"><span class="rt-dot"></span><span class="rt-ttl">${r.ttl}</span>${r.tag}</div><div class="rt-era">${r.era}</div><ul>${r.ev.map(x=>`<li>${x}</li>`).join("")}</ul><div class="rt-gp">族谱上看：${r.gp}</div></div>`).join("");
     if(s){const list=surnamePlaces(s);const byP={};for(const p of list){const pr=provOf(p[1],p[2]);byP[pr]=(byP[pr]||0)+1;}

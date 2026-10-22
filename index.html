@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>华北村庄来历图 · 明初山西移民（试作）</title>
+<title>赵县村庄来历 · 试作</title>
 <link rel="stylesheet" href="vendor/leaflet.css">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -14,9 +14,9 @@
 <div id="landing">
   <div class="wrap">
     <div class="seal">试作版</div>
-    <div class="kicker">明初山西移民 · 1368–1424</div>
+    <div class="kicker">河北 · 赵县 · 243 个村</div>
     <h1>你家的村子<br>是从哪来的？</h1>
-    <p class="lead">华北很多村子是明朝初年从山西迁来的人建的，也有不少村子比那更早。输入老家，看看县志、地名资料里怎么记的。</p>
+    <p class="lead">赵县的村子，有的明朝以前就有，有的是明初从山西迁来的人建的。输入你家的村和姓，看看 1984 年《赵县地名资料汇编》里怎么记的。</p>
     <form id="q" autocomplete="off">
       <div class="acw"><label class="field"><span>县</span><input id="qCounty" placeholder="输入县名，如：赵县" value="赵县" autocomplete="off"></label><div class="ac hidden" id="acCounty"></div></div>
       <div class="acw"><label class="field"><span>村</span><input id="qVillage" placeholder="输入一个字就能选，如：泥" autocomplete="off"></label><div class="ac hidden" id="acVillage"></div></div>
@@ -24,7 +24,7 @@
       <button class="btn" type="submit">查 一 查</button>
     </form>
     <div class="try"><a href="#" id="tryEx">示例：赵县 · 东卜庄村 · 卜 →</a></div>
-    <div class="note">目前河北赵县有逐村来历（据 1984 年《赵县地名资料汇编》）；其他县可以查可能的来路和同姓村分布。</div>
+    <div class="note">这里列的是书里的记载和几种可能，不是你家的定论。书里写的多是一个村的来历，不一定是你这一家的；"据传"的部分本来就是口传。你家具体从哪来，要看自家族谱。</div>
     <div class="stats"><div><b id="stPlaces">13万</b>华北村镇</div><div><b>243</b>赵县村庄来历</div><div><b>11</b>收录县份记载</div></div>
   </div>
 </div>
@@ -32,7 +32,7 @@
 <!-- 顶栏 -->
 <div id="mapLegend" class="hidden"><div><i style="background:#2e6b3a"></i>明代以前就有</div><div><i style="background:#a8322a"></i>明初自洪洞迁来</div><div><i style="background:#d0702a"></i>明初自山西他县迁来</div><div><i style="background:#b8892f"></i>明初屯垦建村</div><div><i style="background:#0f766e"></i>从附近村分出</div><div><i style="background:#4f6d8a"></i>明代建村</div><div><i style="background:#8a7a6a"></i>清代以后</div><div><i style="background:#bbb"></i>年代不详</div><div><i style="background:#fff;border:1px solid #999"></i>书里无条目</div></div>
 <div id="top">
-  <div class="ttl" id="homeBtn"><b>华北村庄来历图</b><span>试作版</span></div>
+  <div class="ttl" id="homeBtn"><b>赵县村庄来历</b><span>试作版</span></div>
   <div class="btns"><button id="btnSearch">查询</button><button id="btnLayers">图层</button><button id="btnAbout">出处</button></div>
 </div>
 

@@ -112,3 +112,4 @@ b.m{color:var(--red)}
 
 #mapLegend{position:absolute;top:46px;left:8px;z-index:900;background:#fbf6eaee;border:1px solid var(--line);border-radius:5px;padding:4px 8px;font-size:11px;line-height:1.65;pointer-events:none}
 #mapLegend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:0}
+.disc{margin:10px 0 2px;padding:6px 10px;border:1px dashed var(--red);border-radius:4px;font-size:13px;color:var(--red);background:#fff6ee}
