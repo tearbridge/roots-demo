@@ -175,7 +175,7 @@ let ROUTESET=[],HERE=null;
 function lineCurve(a,b,color,dashed,particles){const c=ctrl(a,b),pts=[];for(let i=0;i<=30;i++)pts.push(bez(a,c,b,i/30));
   L.polyline(pts,{renderer:sv,color,weight:2,opacity:dashed?.8:.55,dashArray:dashed?"5 6":null,interactive:false}).addTo(flows);
   if(particles)for(let j=0;j<particles;j++)parts.push({m:L.circleMarker(a,{renderer:sv,radius:2.6,stroke:false,fillColor:color,fillOpacity:.9,interactive:false}).addTo(flows),a,c,b,t:Math.random(),v:.003+Math.random()*.004});}
-function drawRoutes(only){refs.clearLayers();flows.clearLayers();parts=[];map.closePopup();const pts=[HERE];
+function drawRoutes(only){refs.clearLayers();flows.clearLayers();parts=[];map.closePopup();const pts=[HERE];setLayer("zx",false);
   ROUTESET.forEach((r,i)=>{if(only!=null&&only!==i)return;r.draw(pts);});
   document.querySelectorAll(".route").forEach((e,i)=>e.classList.toggle("dim",only!=null&&only!==i));
   fly(L.latLngBounds(pts).pad(.12));}
@@ -238,7 +238,9 @@ function runInner(cName,vName,sName,box){
         for(const[p,d]of sm)ev.push(`<b>${p.osm_name}（${kmTxt(d)}）：</b>${esc(p.history)} <span class="sub">${p.evidence}</span> ${CONF[p.confidence]}`);
         if(ZXSTAT.branch.length)ev.push(`赵县有记载从本地别的村分出来的例子：`+ZXSTAT.branch.slice(0,4).map(b=>`${b.v}${b.sur?"（"+b.sur+"氏）":""}自${b.from}迁来`).join("；")+"。");}
       ROUTESET.push({k:"branch",ttl:knownKind==="branch"?"从附近的村分出来":`从附近的${esc(s)}姓村分出来`,era:"明—清",tag:knownKind==="branch"?T("有记载","ok"):T("有线索"),ev,gp:`族谱始祖写的是本县或邻县的某个村，或者老人说跟${top[0]?esc(top[0][0][0]):""}是本家。`,
-        draw(pts){for(const[p]of top){lineCurve([p[1],p[2]],here,RC.branch,true,0);refMark(p[1],p[2],p[0],`<b>${esc(p[0])}</b><br>名字以「${esc(s)}」开头的村，离你们 ${kmTxt(km(here,[p[1],p[2]]))}`,RC.branch);pts.push([p[1],p[2]]);}}});}
+        draw(pts){const seen=new Set(top.map(([p])=>p[0]));
+          if(isZX)for(const p of VIL.pilot.filter(p=>s&&(p.surname||"").includes(s)&&p.origin&&!seen.has(p.osm_name)&&p.book!==(mine&&mine.book))){seen.add(p.osm_name);lineCurve([p.lat,p.lon],here,RC.branch,true,0);refMark(p.lat,p.lon,p.osm_name,pilotHtml(p),RC.branch);pts.push([p.lat,p.lon]);}
+          for(const[p]of top){if(isZX){const pv=VIL.pilot.find(x=>x.osm_name===p[0]);if(pv){lineCurve([pv.lat,pv.lon],here,RC.branch,true,0);refMark(pv.lat,pv.lon,pv.osm_name,pilotHtml(pv),RC.branch);pts.push([pv.lat,pv.lon]);continue;}}lineCurve([p[1],p[2]],here,RC.branch,true,0);refMark(p[1],p[2],p[0],`<b>${esc(p[0])}</b><br>名字以「${esc(s)}」开头的村，离你们 ${kmTxt(km(here,[p[1],p[2]]))}`,RC.branch);pts.push([p[1],p[2]]);}}});}
     // 4 本地老户
     {const ev=[];let tag=T("可能");
       if(mine&&mine.category==="pre_ming"){ev.push(`<b>${mine.osm_name}这个村明代以前就有（${mine.era}）。</b>${mySet.length?`但书里写${s||""}姓是后来迁来的，见上面那条。`:(surnameElsewhere?`书里记的迁入姓氏没有${s}姓，${s}家可能是村里的老户。`:"")} <span class="sub">${mine.evidence}</span> ${CONF[mine.confidence]}`);if(!mySet.length)tag=T("村子有记载","ok");}
