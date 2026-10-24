@@ -263,12 +263,14 @@ function runInner(cName,vName,sName,box){
     let h=`<h2>${esc(hereName)}${s?` · ${esc(s)}家`:""}</h2><div class="sub">${cc?esc(cc.n):""}${isZX?" · 明代属真定府赵州":""}</div>`;
     if(mine)h+=`<h3>书里怎么写你们村</h3><div class="card">${esc(mine.history)}<div class="sub">${mine.evidence} ${CONF[mine.confidence]}${mine.page?` · 原书第 ${mine.page} 页`:""}</div></div>`;else if(isZX&&v)h+=`<p class="sub">《赵县地名资料汇编》（1984）里没有「${esc(v.n)}」的单独条目。</p>`;
     h+=`<div class="disc">下面是记载和可能，不是你家的定论。你家具体从哪来，以自家族谱为准。</div>`;
+    if(isZX&&v&&s)h+=`<div id="contrib"></div>`;else if(isZX&&v)h+=`<p class="sub">填上姓，能看到同村同姓各家补充的说法。</p>`;
     h+=`<h3>可能的来路（${ROUTESET.length} 种）</h3><p class="sub">没有族谱也没关系，下面是按现有记载推出的几种可能。点一种，地图上只看这一条；<a class="lnk" id="allR">看全部</a></p>`;
     h+=ROUTESET.map((r,i)=>`<div class="route${r.weak?" weak":""}" data-i="${i}" style="--rc:${RC[r.k]}"><div class="rt-h"><span class="rt-dot"></span><span class="rt-ttl">${r.ttl}</span>${r.tag}</div><div class="rt-era">${r.era}</div><ul>${r.ev.map(x=>`<li>${x}</li>`).join("")}</ul><div class="rt-gp">族谱上看：${r.gp}</div></div>`).join("");
     if(s){const list=surnamePlaces(s);const byP={};for(const p of list){const pr=provOf(p[1],p[2]);byP[pr]=(byP[pr]||0)+1;}
       h+=`<h3>${esc(s)}姓村子的分布</h3><p>冀晋鲁豫京津名字以「${esc(s)}」开头的村一共 <b>${list.length}</b> 个：`+["河北","山西","山东","河南","北京","天津"].filter(k=>byP[k]).map(k=>`${k} ${byP[k]}`).join("，")+`。<a class="lnk" id="showSN">在地图上看</a></p><p class="sub">以某字开头的村不一定是该姓建的，只是线索。</p>`;}
-    h+=`<h3>家里能确认的</h3><div class="card"><div class="kv"><b>始祖</b><span class="q">？</span></div><div class="kv"><b>迁自</b><span class="q">？</span></div><div class="kv"><b>年代</b><span class="q">？</span></div><div class="kv"><b>字辈</b><span class="q">？</span></div></div><p class="sub">有族谱或老人口述，就能从上面几种里挑出真的那条。${v&&!v.pilot?(isZX?"":"这个县的逐村来历还没开始整理。"):""}</p>`;
+    if(v&&!v.pilot&&!isZX)h+=`<p class="sub">这个县的逐村来历还没开始整理。</p>`;
     box.innerHTML=h;box.scrollTop=0;
+    if($("#contrib"))ROOTS_C.render($("#contrib"),{village:v.n,surname:s});
     box.querySelectorAll(".route").forEach(e=>e.onclick=()=>drawRoutes(+e.dataset.i));
     $("#allR").onclick=ev=>{ev.stopPropagation();drawRoutes(null);};
     if($("#showSN"))$("#showSN").onclick=()=>{refs.clearLayers();flows.clearLayers();parts=[];showSurname(s);fly(NORTH);};
